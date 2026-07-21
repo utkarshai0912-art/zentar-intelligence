@@ -7,7 +7,7 @@ import { ToolForm } from '@/components/tools/ToolForm';
 import { OutputPanel } from '@/components/tools/OutputPanel';
 import { HistoryList } from '@/components/tools/HistoryList';
 import { useAuth } from '@/lib/auth-context';
-import { createClient } from '@/lib/supabase/client';
+import { getToolBySlug, getUserGenerations, addGeneration, deleteGeneration } from '@/lib/firebase/firestore';
 import type { Tool, Generation } from '@/lib/types';
 import { toast } from 'sonner';
 import { Sparkles, ChevronLeft, Lock, ArrowUpCircle } from 'lucide-react';
@@ -119,11 +119,13 @@ const USAGE_LIMITS: Record<string, number> = {
   business: 9999,
 };
 
+const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'zentar-intelligence';
+
 export default function ToolPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, getIdToken } = useAuth();
 
   const [tool, setTool] = useState<Tool | null>(null);
   const [localTool, setLocalTool] = useState<typeof DEFAULT_TOOLS[string] | null>(null);
@@ -136,21 +138,23 @@ export default function ToolPage() {
   // Load tool config
   useEffect(() => {
     const fetchTool = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('tools')
-        .select('*')
-        .eq('slug', slug)
-        .eq('is_active', true)
-        .single();
-
-      if (data) {
-        setTool(data as Tool);
-      } else if (DEFAULT_TOOLS[slug]) {
-        setLocalTool(DEFAULT_TOOLS[slug]);
-      } else {
-        router.push('/');
-        return;
+      try {
+        const data = await getToolBySlug(slug);
+        if (data) {
+          setTool(data as Tool);
+        } else if (DEFAULT_TOOLS[slug]) {
+          setLocalTool(DEFAULT_TOOLS[slug]);
+        } else {
+          router.push('/');
+          return;
+        }
+      } catch (err) {
+        if (DEFAULT_TOOLS[slug]) {
+          setLocalTool(DEFAULT_TOOLS[slug]);
+        } else {
+          router.push('/');
+          return;
+        }
       }
       setLoadingTool(false);
     };
@@ -161,17 +165,15 @@ export default function ToolPage() {
   const fetchHistory = useCallback(async () => {
     if (!user) return;
     setHistoryLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('generations')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('tool_id', tool?.id || slug)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    if (data) setGenerations(data as Generation[]);
+    try {
+      // Use slug as the tool identifier for generations
+      const data = await getUserGenerations(user.uid, slug);
+      if (data) setGenerations(data as Generation[]);
+    } catch (err) {
+      console.error('Failed to load history');
+    }
     setHistoryLoading(false);
-  }, [user, tool?.id, slug]);
+  }, [user, slug]);
 
   useEffect(() => {
     if (user && (tool || localTool)) fetchHistory();
@@ -208,15 +210,20 @@ export default function ToolPage() {
     setCurrentOutput('');
 
     try {
-      const formData = new FormData();
-      formData.append('input', input);
-      formData.append('tool_slug', slug);
-      formData.append('system_instructions', toolData.system_instructions);
-      if (file) formData.append('image', file);
+      const token = await getIdToken();
 
-      const res = await fetch('/api/generate', {
+      const res = await fetch(`https://us-central1-${PROJECT_ID}.cloudfunctions.net/generateAI`, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          toolSlug: slug,
+          input,
+          image: file ? await fileToBase64(file) : null,
+          systemInstructions: toolData.system_instructions,
+        }),
       });
 
       if (!res.ok) {
@@ -227,10 +234,23 @@ export default function ToolPage() {
       const data = await res.json();
       setCurrentOutput(data.output);
 
+      // Save generation to Firestore
+      try {
+        if (user) {
+          await addGeneration(user.uid, {
+            tool_id: slug,
+            input_data: input || '(image uploaded)',
+            output_data: data.output,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to save generation:', err);
+      }
+
       // Refresh history
       fetchHistory();
 
-      // Decrement credits locally
+      // Decrement credits locally (server handles actual deduction)
       if (profile) {
         profile.credits_remaining = Math.max(0, profile.credits_remaining - 1);
       }
@@ -243,10 +263,14 @@ export default function ToolPage() {
   };
 
   const handleDeleteGeneration = async (genId: string) => {
-    const supabase = createClient();
-    await supabase.from('generations').delete().eq('id', genId);
-    setGenerations((prev) => prev.filter((g) => g.id !== genId));
-    toast.success('Generation deleted');
+    if (!user) return;
+    try {
+      await deleteGeneration(user.uid, genId);
+      setGenerations((prev) => prev.filter((g) => g.id !== genId));
+      toast.success('Generation deleted');
+    } catch (err) {
+      toast.error('Failed to delete generation');
+    }
   };
 
   const handleSelectGeneration = (gen: Generation) => {
@@ -396,4 +420,14 @@ export default function ToolPage() {
       </div>
     </AppLayout>
   );
+}
+
+// Helper to convert file to base64 string
+function fileToBase64(file: File): Promise<string | null> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
 }

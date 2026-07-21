@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from '@/lib/auth-context';
-import { createClient } from '@/lib/supabase/client';
+import { getUserTransactions } from '@/lib/firebase/firestore';
 import type { Transaction } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
 import { CreditCard, Download, ArrowLeft } from 'lucide-react';
@@ -13,18 +13,16 @@ export default function BillingPage() {
   const { user, loading: authLoading } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     if (!user) return;
     const fetchTransactions = async () => {
-      const { data } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (data) setTransactions(data as Transaction[]);
+      try {
+        const data = await getUserTransactions(user.uid);
+        if (data) setTransactions(data as Transaction[]);
+      } catch (err) {
+        console.error('Failed to load transactions');
+      }
       setLoading(false);
     };
     fetchTransactions();
