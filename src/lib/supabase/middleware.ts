@@ -25,7 +25,6 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh session
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -43,8 +42,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If logged in and on auth pages, redirect to home
-  if (user && request.nextUrl.pathname.startsWith('/auth')) {
+  // Redirect authenticated users away from auth pages
+  const authPaths = ['/auth/login', '/auth/signup'];
+  const isAuthPage = authPaths.some((p) =>
+    request.nextUrl.pathname.startsWith(p)
+  );
+
+  if (isAuthPage && user) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);

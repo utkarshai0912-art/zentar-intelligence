@@ -14,6 +14,14 @@ export interface UserProfile {
   created_at: string;
 }
 
+// Auth user (subset of Supabase User)
+export interface User {
+  id: string;
+  email: string;
+  app_metadata: Record<string, any>;
+  user_metadata: Record<string, any>;
+}
+
 // Tool configuration
 export interface Tool {
   id: string;

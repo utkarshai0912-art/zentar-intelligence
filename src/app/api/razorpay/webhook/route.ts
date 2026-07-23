@@ -2,98 +2,57 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import crypto from 'crypto';
 
+const PLANS: Record<string, { credits: number; name: string }> = {
+  pro: { credits: 300, name: 'Pro' },
+  business: { credits: 9999, name: 'Business' },
+};
+
 export async function POST(request: NextRequest) {
-  try {
-    // Verify webhook signature
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
-    }
+  const text = await request.text();
+  const signature = request.headers.get('x-razorpay-signature') || '';
 
-    const body = await request.text();
-    const signature = request.headers.get('x-razorpay-signature');
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || '';
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(text)
+    .digest('hex');
 
-    const expectedSignature = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(body)
-      .digest('hex');
-
-    if (signature !== expectedSignature) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
-    }
-
-    const event = JSON.parse(body);
-    const supabase = await createClient();
-
-    // Handle payment captured
-    if (event.event === 'payment.captured') {
-      const payment = event.payload.payment.entity;
-      const orderId = payment.order_id;
-      const paymentId = payment.id;
-      const notes = payment.notes || {};
-      const userId = notes.userId;
-      const planId = notes.planId;
-
-      // Update transaction
-      await supabase
-        .from('transactions')
-        .update({
-          status: 'captured',
-          razorpay_payment_id: paymentId,
-        })
-        .eq('razorpay_order_id', orderId);
-
-      // Update user plan if we have userId
-      if (userId && planId) {
-        const creditsMap: Record<string, number> = {
-          pro: 300,
-          business: 9999,
-        };
-
-        await supabase
-          .from('users')
-          .update({
-            plan_type: planId,
-            subscription_status: 'active',
-            credits_remaining: creditsMap[planId] || 300,
-            subscription_renewal_date: new Date(
-              Date.now() + 30 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          })
-          .eq('user_id', userId);
-      }
-    }
-
-    // Handle payment failed
-    if (event.event === 'payment.failed') {
-      const payment = event.payload.payment.entity;
-      await supabase
-        .from('transactions')
-        .update({ status: 'failed' })
-        .eq('razorpay_order_id', payment.order_id);
-    }
-
-    // Handle subscription expired/cancelled
-    if (event.event === 'subscription.cancelled' || event.event === 'subscription.expired') {
-      const subscription = event.payload.subscription.entity;
-      const notes = subscription.notes || {};
-      const userId = notes.userId;
-
-      if (userId) {
-        await supabase
-          .from('users')
-          .update({
-            plan_type: 'free',
-            subscription_status: 'inactive',
-            credits_remaining: 30,
-          })
-          .eq('user_id', userId);
-      }
-    }
-
-    return NextResponse.json({ received: true });
-  } catch (error: any) {
-    console.error('Webhook error:', error);
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
+  if (signature !== expectedSignature) {
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
+
+  const event = JSON.parse(text);
+
+  if (event.event === 'payment.captured') {
+    const payment = event.payload.payment.entity;
+    const orderId = payment.order_id;
+    const planId = payment.notes?.planId || 'pro';
+    const userId = payment.notes?.userId;
+
+    if (userId) {
+      const supabase = await createClient();
+      const plan = PLANS[planId];
+
+      await supabase
+        .from('users')
+        .update({
+          plan_type: planId,
+          credits_remaining: plan?.credits || 300,
+          subscription_status: 'active',
+        })
+        .eq('user_id', userId);
+
+      await supabase.from('transactions').insert({
+        user_id: userId,
+        razorpay_payment_id: payment.id,
+        razorpay_order_id: orderId,
+        plan: planId,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: 'captured',
+      });
+    }
+  }
+
+  return NextResponse.json({ received: true });
 }

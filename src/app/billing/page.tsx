@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from '@/lib/auth-context';
-import { getUserTransactions } from '@/lib/firebase/firestore';
+import { getUserTransactions } from '@/lib/supabase/queries';
 import type { Transaction } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
 import { CreditCard, Download, ArrowLeft } from 'lucide-react';
@@ -18,7 +18,7 @@ export default function BillingPage() {
     if (!user) return;
     const fetchTransactions = async () => {
       try {
-        const data = await getUserTransactions(user.uid);
+        const data = await getUserTransactions(user.id);
         if (data) setTransactions(data as Transaction[]);
       } catch (err) {
         console.error('Failed to load transactions');

@@ -22,7 +22,7 @@ function LoginForm() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      toast.error(error.message);
+      toast.error(error.message || 'Login failed');
     } else {
       toast.success('Welcome back!');
       router.push(redirect);
@@ -34,9 +34,9 @@ function LoginForm() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${location.origin}/auth/callback?redirect=${redirect}` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) toast.error(error.message);
+    if (error) toast.error(error.message || 'Google login failed');
     setLoading(false);
   };
 
@@ -75,40 +75,23 @@ function LoginForm() {
       <form onSubmit={handleEmailLogin} className="space-y-4">
         <div>
           <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            required
-            className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-primary placeholder-text-tertiary transition-colors focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary dark:placeholder-dark-text-tertiary"
-          />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required
+            className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-primary placeholder-text-tertiary transition-colors focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary dark:placeholder-dark-text-tertiary" />
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            required
-            className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-primary placeholder-text-tertiary transition-colors focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary dark:placeholder-dark-text-tertiary"
-          />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required
+            className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-primary placeholder-text-tertiary transition-colors focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary dark:placeholder-dark-text-tertiary" />
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-brand-600 disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading}
+          className="w-full rounded-xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-brand-600 disabled:opacity-50">
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-text-secondary dark:text-dark-text-secondary">
         Don&apos;t have an account?{' '}
-        <Link href="/auth/signup" className="font-medium text-brand-500 hover:text-brand-600">
-          Sign up
-        </Link>
+        <Link href="/auth/signup" className="font-medium text-brand-500 hover:text-brand-600">Sign up</Link>
       </p>
     </div>
   );

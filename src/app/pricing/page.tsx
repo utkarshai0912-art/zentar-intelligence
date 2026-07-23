@@ -26,6 +26,7 @@ export default function PricingPage() {
     setLoading(planId);
 
     try {
+      // Create Razorpay order via Next.js API route
       const res = await fetch('/api/razorpay/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,22 +54,25 @@ export default function PricingPage() {
           contact: profile?.phone || '',
         },
         handler: async function (response: any) {
-          // Verify payment
-          const verifyRes = await fetch('/api/razorpay/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature,
-              planId,
-            }),
-          });
-
-          if (verifyRes.ok) {
-            toast.success('Payment successful! Your plan has been upgraded.');
-            window.location.reload();
-          } else {
+          // Verify payment via Next.js API route
+          try {
+            const verifyRes = await fetch('/api/razorpay/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                planId,
+              }),
+            });
+            if (verifyRes.ok) {
+              toast.success('Payment successful! Your plan has been upgraded.');
+              window.location.reload();
+            } else {
+              toast.error('Payment verification failed. Please contact support.');
+            }
+          } catch {
             toast.error('Payment verification failed. Please contact support.');
           }
         },

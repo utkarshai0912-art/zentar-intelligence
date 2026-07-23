@@ -1,35 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import Razorpay from 'razorpay';
+
+const PLANS: Record<string, { amount: number; credits: number; name: string }> = {
+  pro: { amount: 49900, credits: 300, name: 'Pro' },
+  business: { amount: 149900, credits: 9999, name: 'Business' },
+};
 
 export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { planId } = await request.json();
+  const plan = PLANS[planId];
+
+  if (!plan) {
+    return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
+  }
+
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { planId } = await request.json();
-
-    const planPrices: Record<string, { amount: number; description: string }> = {
-      pro: { amount: 49900, description: 'Pro Plan - Monthly' },
-      business: { amount: 149900, description: 'Business Plan - Monthly' },
-    };
-
-    const plan = planPrices[planId];
-    if (!plan) {
-      return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
-    }
-
-    // Initialize Razorpay
-    const Razorpay = (await import('razorpay')).default;
     const razorpay = new Razorpay({
-      key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-      key_secret: process.env.RAZORPAY_KEY_SECRET!,
+      key_id: process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
+      key_secret: process.env.RAZORPAY_KEY_SECRET || '',
     });
 
-    // Create order
     const order = await razorpay.orders.create({
       amount: plan.amount,
       currency: 'INR',
@@ -40,23 +40,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Save transaction as pending
-    await supabase.from('transactions').insert({
-      user_id: user.id,
-      amount: plan.amount / 100,
-      currency: 'INR',
-      plan: planId,
-      status: 'created',
-      razorpay_order_id: order.id,
-    });
-
     return NextResponse.json({
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
     });
-  } catch (error: any) {
-    console.error('Razorpay order error:', error);
+  } catch (err: any) {
+    console.error('Razorpay order error:', err);
     return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
   }
 }

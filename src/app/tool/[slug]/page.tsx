@@ -7,7 +7,7 @@ import { ToolForm } from '@/components/tools/ToolForm';
 import { OutputPanel } from '@/components/tools/OutputPanel';
 import { HistoryList } from '@/components/tools/HistoryList';
 import { useAuth } from '@/lib/auth-context';
-import { getToolBySlug, getUserGenerations, addGeneration, deleteGeneration } from '@/lib/firebase/firestore';
+import { getToolBySlug, getUserGenerations, addGeneration, deleteGeneration } from '@/lib/supabase/queries';
 import type { Tool, Generation } from '@/lib/types';
 import { toast } from 'sonner';
 import { Sparkles, ChevronLeft, Lock, ArrowUpCircle } from 'lucide-react';
@@ -119,13 +119,12 @@ const USAGE_LIMITS: Record<string, number> = {
   business: 9999,
 };
 
-const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'zentar-intelligence';
 
 export default function ToolPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
-  const { user, profile, loading: authLoading, getIdToken } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
 
   const [tool, setTool] = useState<Tool | null>(null);
   const [localTool, setLocalTool] = useState<typeof DEFAULT_TOOLS[string] | null>(null);
@@ -167,7 +166,7 @@ export default function ToolPage() {
     setHistoryLoading(true);
     try {
       // Use slug as the tool identifier for generations
-      const data = await getUserGenerations(user.uid, slug);
+      const data = await getUserGenerations(user.id);
       if (data) setGenerations(data as Generation[]);
     } catch (err) {
       console.error('Failed to load history');
@@ -192,7 +191,6 @@ export default function ToolPage() {
 
     // Check usage limits
     const plan = (profile?.plan_type || 'free') as keyof typeof USAGE_LIMITS;
-    const limit = USAGE_LIMITS[plan] || 30;
     if (profile && profile.credits_remaining <= 0) {
       toast.error('You\'ve used all your generations. Upgrade your plan!');
       router.push('/pricing');
@@ -210,19 +208,14 @@ export default function ToolPage() {
     setCurrentOutput('');
 
     try {
-      const token = await getIdToken();
-
-      const res = await fetch(`https://us-central1-${PROJECT_ID}.cloudfunctions.net/generateAI`, {
+      // Call Next.js API route (uses Supabase for auth + credit deduction)
+      const res = await fetch('/api/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           toolSlug: slug,
           input,
           image: file ? await fileToBase64(file) : null,
-          systemInstructions: toolData.system_instructions,
         }),
       });
 
@@ -234,10 +227,10 @@ export default function ToolPage() {
       const data = await res.json();
       setCurrentOutput(data.output);
 
-      // Save generation to Firestore
+      // Save generation to Supabase
       try {
         if (user) {
-          await addGeneration(user.uid, {
+          await addGeneration(user.id, {
             tool_id: slug,
             input_data: input || '(image uploaded)',
             output_data: data.output,
@@ -265,7 +258,7 @@ export default function ToolPage() {
   const handleDeleteGeneration = async (genId: string) => {
     if (!user) return;
     try {
-      await deleteGeneration(user.uid, genId);
+      await deleteGeneration(user.id, genId);
       setGenerations((prev) => prev.filter((g) => g.id !== genId));
       toast.success('Generation deleted');
     } catch (err) {

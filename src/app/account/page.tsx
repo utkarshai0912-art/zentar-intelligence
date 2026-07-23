@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from '@/lib/auth-context';
-import { createClient } from '@/lib/supabase/client';
+import { updateUserProfile } from '@/lib/supabase/queries';
 import { Sparkles, Mail, User, Phone, Calendar, CreditCard, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -13,7 +13,6 @@ export default function AccountPage() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
-  const supabase = createClient();
 
   useEffect(() => {
     if (profile) {
@@ -26,15 +25,12 @@ export default function AccountPage() {
     e.preventDefault();
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase
-      .from('users')
-      .update({ name, phone })
-      .eq('user_id', user.id);
-    if (error) {
-      toast.error('Failed to update profile');
-    } else {
+    try {
+      await updateUserProfile(user.id, { name, phone });
       toast.success('Profile updated');
       refreshProfile();
+    } catch (err) {
+      toast.error('Failed to update profile');
     }
     setSaving(false);
   };

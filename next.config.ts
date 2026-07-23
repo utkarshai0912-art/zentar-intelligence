@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://*.supabase.co https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://us-central1-*.cloudfunctions.net https://checkout.razorpay.com",
+              "connect-src 'self' https://*.supabase.co https://checkout.razorpay.com",
               "frame-src https://checkout.razorpay.com https://apis.google.com",
               "object-src 'none'",
               "base-uri 'self'",
