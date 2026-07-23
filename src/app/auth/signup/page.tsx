@@ -32,24 +32,7 @@ export default function SignupPage() {
       return;
     }
 
-    // Create user profile in Supabase
-    if (data.user) {
-      const { error: profileError } = await supabase.from('users').insert({
-        user_id: data.user.id,
-        name,
-        email,
-        phone: '',
-        plan_type: 'free',
-        subscription_status: 'active',
-        credits_remaining: 30,
-        signup_date: new Date().toISOString(),
-      });
-
-      if (profileError) {
-        console.error('Failed to create profile:', profileError);
-      }
-    }
-
+    // Profile is auto-created via the database trigger on auth.users insert
     toast.success('Account created! Check your email for verification.');
     router.push('/');
     setLoading(false);

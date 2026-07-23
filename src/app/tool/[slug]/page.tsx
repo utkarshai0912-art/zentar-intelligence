@@ -258,7 +258,7 @@ export default function ToolPage() {
   const handleDeleteGeneration = async (genId: string) => {
     if (!user) return;
     try {
-      await deleteGeneration(user.id, genId);
+      await deleteGeneration(genId);
       setGenerations((prev) => prev.filter((g) => g.id !== genId));
       toast.success('Generation deleted');
     } catch (err) {

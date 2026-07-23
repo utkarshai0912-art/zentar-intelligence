@@ -85,13 +85,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase.auth]);
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     if (data) {
       setProfile(data as UserProfile);
+    } else if (error) {
+      console.warn('Profile fetch (will retry):', error.message);
     }
   };
 
