@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 
 const PROVIDER = process.env.AI_API_PROVIDER || 'openai';
 const MODEL = process.env.AI_MODEL || 'gpt-4o-mini';
+const BASE_URL = process.env.AI_API_BASE_URL || undefined;
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (image) {
       // Vision request
       if (PROVIDER === 'openai') {
-        const openai = new OpenAI({ apiKey });
+        const openai = new OpenAI({ apiKey, baseURL: BASE_URL });
         const res = await openai.chat.completions.create({
           model: MODEL,
           messages: [
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Text-only request
       if (PROVIDER === 'openai') {
-        const openai = new OpenAI({ apiKey });
+        const openai = new OpenAI({ apiKey, baseURL: BASE_URL });
         const res = await openai.chat.completions.create({
           model: MODEL,
           messages: [
