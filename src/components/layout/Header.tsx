@@ -17,8 +17,12 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/10 ring-1 ring-brand-500/20 transition-all duration-300 group-hover:ring-brand-500/40 group-hover:shadow-lg group-hover:shadow-brand-500/10">
-            <Sparkles className="h-5 w-5 text-brand-500" />
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg ring-1 ring-brand-500/20 transition-all duration-300 group-hover:ring-brand-500/40 group-hover:shadow-lg group-hover:shadow-brand-500/10">
+            <img
+              src="/zentar-logo.png"
+              alt="Zentar Intelligence"
+              className="h-full w-full object-cover"
+            />
           </div>
           <span className="text-lg font-semibold tracking-tight text-text-primary dark:text-dark-text-primary">
             Zentar <span className="text-brand-500">Intelligence</span>

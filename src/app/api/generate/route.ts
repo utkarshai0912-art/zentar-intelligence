@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 
-const PROVIDER = process.env.AI_API_PROVIDER || 'openai';
-const MODEL = process.env.AI_MODEL || 'gpt-4o-mini';
-const BASE_URL = process.env.AI_API_BASE_URL || undefined;
+const PROVIDER = (process.env.AI_API_PROVIDER || 'openai').trim();
+const MODEL = (process.env.AI_MODEL || 'gpt-4o-mini').trim();
+const BASE_URL = (process.env.AI_API_BASE_URL || '').trim() || undefined;
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();

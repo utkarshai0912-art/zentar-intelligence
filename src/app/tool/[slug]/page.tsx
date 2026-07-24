@@ -10,13 +10,14 @@ import { useAuth } from '@/lib/auth-context';
 import { getToolBySlug, getUserGenerations, addGeneration, deleteGeneration } from '@/lib/supabase/queries';
 import type { Tool, Generation } from '@/lib/types';
 import { toast } from 'sonner';
-import { Sparkles, ChevronLeft, Lock, ArrowUpCircle } from 'lucide-react';
+import { Sparkles, ChevronLeft, Lock, ArrowUpCircle, type LucideIcon } from 'lucide-react';
+import { TOOL_ICONS, DEFAULT_ICON } from '@/lib/icons';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-const DEFAULT_TOOLS: Record<string, Omit<Tool, 'id' | 'created_at' | 'updated_at' | 'is_active'>> = {
+const DEFAULT_TOOLS: Record<string, Omit<Tool, 'id' | 'created_at' | 'updated_at' | 'is_active' | 'icon'>> = {
   'thumbnail-analyser': {
-    name: 'AI Thumbnail Analyser', slug: 'thumbnail-analyser', icon: '🎯',
+    name: 'AI Thumbnail Analyser', slug: 'thumbnail-analyser',
     description: 'Upload a thumbnail image and get a CTR-potential score with specific fixes.',
     system_instructions: `You are an expert YouTube thumbnail analyst. Analyze the uploaded thumbnail image and provided title/niche. Return:
 1. **CTR Score** (0-100) with a visual indicator
@@ -28,7 +29,7 @@ Be brutally honest but constructive. Use specific design terminology (color theo
     input_type: 'image_upload', output_type: 'markdown', is_premium: false,
   },
   'thumbnail-maker': {
-    name: 'AI Thumbnail Maker', slug: 'thumbnail-maker', icon: '🎨',
+    name: 'AI Thumbnail Maker', slug: 'thumbnail-maker',
     description: 'Describe your video and get a thumbnail design brief.',
     system_instructions: `You are a professional thumbnail designer for YouTube. Based on the video description provided:
 
@@ -39,7 +40,7 @@ Be specific about layout, lighting, emotions, and composition. Include font reco
     input_type: 'long_text', output_type: 'markdown', is_premium: false,
   },
   'logo-prompter': {
-    name: 'AI Logo Prompter', slug: 'logo-prompter', icon: '🪄',
+    name: 'AI Logo Prompter', slug: 'logo-prompter',
     description: 'Turn your brand into logo concept directions and prompts.',
     system_instructions: `You are a brand identity designer. Based on the brand description:
 
@@ -50,7 +51,7 @@ Consider industry, brand personality, color psychology, and scalability.`,
     input_type: 'long_text', output_type: 'markdown', is_premium: false,
   },
   'message-writer': {
-    name: 'AI Message Writer', slug: 'message-writer', icon: '✉️',
+    name: 'AI Message Writer', slug: 'message-writer',
     description: 'Craft polished outreach messages with tone variants.',
     system_instructions: `You are a professional copywriter specializing in client outreach. Based on the brief provided:
 
@@ -63,7 +64,7 @@ Each variant should be complete and ready to send. Keep messages under 200 words
     input_type: 'long_text', output_type: 'markdown', is_premium: false,
   },
   'web-prompter': {
-    name: 'AI Web Prompter', slug: 'web-prompter', icon: '🌐',
+    name: 'AI Web Prompter', slug: 'web-prompter',
     description: 'Get a structured website build prompt from your business description.',
     system_instructions: `You are a senior web strategist and UX architect. Based on the business description:
 
@@ -76,7 +77,7 @@ Prioritize conversion and user experience. Be specific about calls-to-action.`,
     input_type: 'long_text', output_type: 'markdown', is_premium: true,
   },
   'objection-handler': {
-    name: 'AI Objection Handler', slug: 'objection-handler', icon: '🤝',
+    name: 'AI Objection Handler', slug: 'objection-handler',
     description: 'Turn objections into persuasive responses.',
     system_instructions: `You are a sales negotiation expert. For each client objection:
 
@@ -88,7 +89,7 @@ Cover the emotional subtext behind the objection. Keep responses practical and r
     input_type: 'long_text', output_type: 'markdown', is_premium: false,
   },
   'ugc-ads-prompter': {
-    name: 'AI UGC / Ads Prompter', slug: 'ugc-ads-prompter', icon: '📱',
+    name: 'AI UGC / Ads Prompter', slug: 'ugc-ads-prompter',
     description: 'Generate UGC-style ad scripts from your product details.',
     system_instructions: `You are a UGC (User Generated Content) ad strategist. Based on the product description:
 
@@ -100,7 +101,7 @@ Make scripts feel authentic, not overly produced. Include "this feels like a rea
     input_type: 'long_text', output_type: 'markdown', is_premium: true,
   },
   'script-writer': {
-    name: 'AI Script Writer', slug: 'script-writer', icon: '🎬',
+    name: 'AI Script Writer', slug: 'script-writer',
     description: 'Turn a topic into a full video script.',
     system_instructions: `You are a professional video script writer for YouTube. Based on the topic/outline:
 
@@ -306,7 +307,10 @@ export default function ToolPage() {
               Back to tools
             </Link>
             <div className="flex items-center gap-3">
-              <span className="text-3xl">{toolData.icon}</span>
+              {(() => {
+                const Icon = TOOL_ICONS[slug] || DEFAULT_ICON;
+                return <Icon className="h-8 w-8 text-brand-500" />;
+              })()}
               <div>
                 <h1 className="text-xl font-bold text-text-primary dark:text-dark-text-primary">
                   {toolData.name}

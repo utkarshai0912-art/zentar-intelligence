@@ -6,39 +6,39 @@ import { ToolCard } from '@/components/tools/ToolCard';
 import { useAuth } from '@/lib/auth-context';
 import { createClient } from '@/lib/supabase/client';
 import type { Tool } from '@/lib/types';
-import { Sparkles, ArrowRight, Brain, Wand2, Zap, Shield, Palette, MessageSquare, Globe, Handshake } from 'lucide-react';
+import { Sparkles, ArrowRight, Brain, Zap, Shield, Wand2, Palette, Globe } from 'lucide-react';
 
 const DEFAULT_TOOLS = [
   {
-    id: '1', name: 'AI Thumbnail Analyser', slug: 'thumbnail-analyser', icon: '🎯',
+    id: '1', name: 'AI Thumbnail Analyser', slug: 'thumbnail-analyser',
     description: 'Upload a thumbnail and get a CTR-potential score with specific fixes.', is_premium: false,
   },
   {
-    id: '2', name: 'AI Thumbnail Maker', slug: 'thumbnail-maker', icon: '🎨',
+    id: '2', name: 'AI Thumbnail Maker', slug: 'thumbnail-maker',
     description: 'Describe your video and get a thumbnail design brief with image prompts.', is_premium: false,
   },
   {
-    id: '3', name: 'AI Logo Prompter', slug: 'logo-prompter', icon: '🪄',
+    id: '3', name: 'AI Logo Prompter', slug: 'logo-prompter',
     description: 'Turn your brand description into logo concepts and image-gen prompts.', is_premium: false,
   },
   {
-    id: '4', name: 'AI Message Writer', slug: 'message-writer', icon: '✉️',
+    id: '4', name: 'AI Message Writer', slug: 'message-writer',
     description: 'Craft polished outreach messages with multiple tone variants.', is_premium: false,
   },
   {
-    id: '5', name: 'AI Web Prompter', slug: 'web-prompter', icon: '🌐',
+    id: '5', name: 'AI Web Prompter', slug: 'web-prompter',
     description: 'Get a structured website build prompt from your business description.', is_premium: true,
   },
   {
-    id: '6', name: 'AI Objection Handler', slug: 'objection-handler', icon: '🤝',
+    id: '6', name: 'AI Objection Handler', slug: 'objection-handler',
     description: 'Turn client objections into professional, persuasive responses.', is_premium: false,
   },
   {
-    id: '7', name: 'AI UGC / Ads Prompter', slug: 'ugc-ads-prompter', icon: '📱',
+    id: '7', name: 'AI UGC / Ads Prompter', slug: 'ugc-ads-prompter',
     description: 'Generate UGC-style ad scripts from your product details.', is_premium: true,
   },
   {
-    id: '8', name: 'AI Script Writer', slug: 'script-writer', icon: '🎬',
+    id: '8', name: 'AI Script Writer', slug: 'script-writer',
     description: 'Turn a topic or outline into a full video script.', is_premium: false,
   },
 ];
@@ -151,7 +151,6 @@ export default function HomePage() {
               <ToolCard
                 key={tool.slug}
                 name={tool.name}
-                icon={tool.icon}
                 description={tool.description}
                 slug={tool.slug}
                 isPremium={tool.is_premium}

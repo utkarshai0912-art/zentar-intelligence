@@ -4,19 +4,20 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, type LucideIcon } from 'lucide-react';
+import { TOOL_ICONS, DEFAULT_ICON } from '@/lib/icons';
 import type { Tool } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 
-const DEFAULT_TOOLS = [
-  { name: 'AI Thumbnail Analyser', icon: '🎯', slug: 'thumbnail-analyser' },
-  { name: 'AI Thumbnail Maker', icon: '🎨', slug: 'thumbnail-maker' },
-  { name: 'AI Logo Prompter', icon: '🪄', slug: 'logo-prompter' },
-  { name: 'AI Message Writer', icon: '✉️', slug: 'message-writer' },
-  { name: 'AI Web Prompter', icon: '🌐', slug: 'web-prompter' },
-  { name: 'AI Objection Handler', icon: '🤝', slug: 'objection-handler' },
-  { name: 'AI UGC / Ads Prompter', icon: '📱', slug: 'ugc-ads-prompter' },
-  { name: 'AI Script Writer', icon: '🎬', slug: 'script-writer' },
+const DEFAULT_TOOLS: { name: string; slug: string; icon: LucideIcon }[] = [
+  { name: 'AI Thumbnail Analyser', icon: TOOL_ICONS['thumbnail-analyser'] || DEFAULT_ICON, slug: 'thumbnail-analyser' },
+  { name: 'AI Thumbnail Maker', icon: TOOL_ICONS['thumbnail-maker'] || DEFAULT_ICON, slug: 'thumbnail-maker' },
+  { name: 'AI Logo Prompter', icon: TOOL_ICONS['logo-prompter'] || DEFAULT_ICON, slug: 'logo-prompter' },
+  { name: 'AI Message Writer', icon: TOOL_ICONS['message-writer'] || DEFAULT_ICON, slug: 'message-writer' },
+  { name: 'AI Web Prompter', icon: TOOL_ICONS['web-prompter'] || DEFAULT_ICON, slug: 'web-prompter' },
+  { name: 'AI Objection Handler', icon: TOOL_ICONS['objection-handler'] || DEFAULT_ICON, slug: 'objection-handler' },
+  { name: 'AI UGC / Ads Prompter', icon: TOOL_ICONS['ugc-ads-prompter'] || DEFAULT_ICON, slug: 'ugc-ads-prompter' },
+  { name: 'AI Script Writer', icon: TOOL_ICONS['script-writer'] || DEFAULT_ICON, slug: 'script-writer' },
 ];
 
 interface SidebarProps {
@@ -44,6 +45,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   }, []);
 
   const displayTools = tools.length > 0 ? tools : DEFAULT_TOOLS;
+
+  const getIcon = (slug: string, dbIcon?: string) => {
+    const SvgIcon = TOOL_ICONS[slug];
+    if (SvgIcon) return <SvgIcon className="h-5 w-5 shrink-0" />;
+    if (dbIcon) return <span className="text-lg">{dbIcon}</span>;
+    return <DEFAULT_ICON className="h-5 w-5 shrink-0" />;
+  };
 
   return (
     <aside
@@ -78,7 +86,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                     : 'text-text-secondary hover:bg-surface-tertiary hover:text-text-primary dark:text-dark-text-secondary dark:hover:bg-dark-surface-tertiary dark:hover:text-dark-text-primary'
                 )}
               >
-                <span className="text-lg">{tool.icon}</span>
+                {getIcon(slug, (tool as any).icon)}
                 <span className="truncate">{tool.name}</span>
               </Link>
             );

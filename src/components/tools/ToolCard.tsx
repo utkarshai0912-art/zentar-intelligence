@@ -2,20 +2,20 @@
 
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { Lock, Sparkles, ChevronRight } from 'lucide-react';
+import { Lock, Sparkles, ChevronRight, type LucideIcon } from 'lucide-react';
+import { TOOL_ICONS, DEFAULT_ICON } from '@/lib/icons';
 
 interface ToolCardProps {
   name: string;
-  icon: string;
-  description: string;
   slug: string;
+  description: string;
   isPremium: boolean;
   userPlan?: string;
 }
 
-export function ToolCard({ name, icon, description, slug, isPremium, userPlan }: ToolCardProps) {
+export function ToolCard({ name, slug, description, isPremium, userPlan }: ToolCardProps) {
   const isLocked = isPremium && userPlan === 'free';
-  const userIsPro = userPlan === 'pro' || userPlan === 'business';
+  const Icon: LucideIcon = TOOL_ICONS[slug] || DEFAULT_ICON;
 
   return (
     <Link href={isLocked ? '/pricing' : `/tool/${slug}`}>
@@ -43,7 +43,7 @@ export function ToolCard({ name, icon, description, slug, isPremium, userPlan }:
 
         {/* Icon */}
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500/10 ring-1 ring-brand-500/20 transition-all duration-300 group-hover:ring-brand-500/40 group-hover:shadow-lg group-hover:shadow-brand-500/10">
-          <span className="text-2xl">{icon}</span>
+          <Icon className="h-6 w-6 text-brand-500" />
         </div>
 
         {/* Content */}
