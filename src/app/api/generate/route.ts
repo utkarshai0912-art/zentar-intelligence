@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (image) {
       // Vision request
       if (PROVIDER === 'openai') {
-        const openai = new OpenAI({ apiKey, baseURL: BASE_URL });
+        const openai = new OpenAI({ apiKey, baseURL: BASE_URL, timeout: 20000 });
         const res = await openai.chat.completions.create({
           model: MODEL,
           messages: [
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Text-only request
       if (PROVIDER === 'openai') {
-        const openai = new OpenAI({ apiKey, baseURL: BASE_URL });
+        const openai = new OpenAI({ apiKey, baseURL: BASE_URL, timeout: 20000 });
         const res = await openai.chat.completions.create({
           model: MODEL,
           messages: [
