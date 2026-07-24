@@ -221,8 +221,15 @@ export default function ToolPage() {
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Generation failed');
+        let errMsg = 'Generation failed';
+        try {
+          const err = await res.json();
+          errMsg = err.error || errMsg;
+        } catch {
+          const text = await res.text().catch(() => '');
+          errMsg = text || `Server error (${res.status})`;
+        }
+        throw new Error(errMsg);
       }
 
       const data = await res.json();
